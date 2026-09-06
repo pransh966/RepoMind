@@ -1,11 +1,3 @@
-/* ==========================================================================
-   RepoMind -- premium/refined theme.
-   Calm graphite surfaces, restrained soft-teal accent, Inter for reading
-   comfort with monospace reserved for code/citations only. Flat, quiet,
-   generous whitespace -- the goal is a tool that reads as considered and
-   professional rather than a technical demo.
-   ========================================================================== */
-
 :root {
   --bg-page: #0e1013;
   --bg-panel: #14171c;
@@ -80,9 +72,7 @@ input:focus, textarea:focus {
 }
 input::placeholder, textarea::placeholder { color: var(--text-faint); }
 
-/* ==========================================================================
-   Buttons
-   ========================================================================== */
+
 .btn-primary {
   background: var(--accent);
   color: var(--accent-text-on);
@@ -162,9 +152,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 }
 .btn-connect .plus { color: var(--accent); font-weight: 600; }
 
-/* ==========================================================================
-   Brand
-   ========================================================================== */
+
 .brand {
   display: flex;
   align-items: center;
@@ -185,9 +173,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   letter-spacing: -0.1px;
 }
 
-/* ==========================================================================
-   Auth screen
-   ========================================================================== */
+
 .auth-screen {
   height: 100%;
   display: flex;
@@ -247,9 +233,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   min-height: 1px;
 }
 
-/* ==========================================================================
-   App shell
-   ========================================================================== */
+
 .app {
   display: grid;
   grid-template-columns: 264px 1fr;
@@ -364,9 +348,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 }
 .user-email { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ==========================================================================
-   Main chat panel
-   ========================================================================== */
+
 .main { display: flex; flex-direction: column; min-width: 0; }
 
 .main-header {
@@ -422,7 +404,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 }
 .message.assistant .message-bubble { padding: 0; }
 
-/* Rendered markdown */
+
 .markdown-body { white-space: normal; }
 .markdown-body > *:first-child { margin-top: 0; }
 .markdown-body > *:last-child { margin-bottom: 0; }
@@ -469,7 +451,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .markdown-body blockquote { border-left: 3px solid var(--border-strong); margin: 12px 0; padding: 2px 16px; color: var(--text-secondary); }
 .markdown-body hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
 
-/* Thinking indicator */
+
 .thinking {
   display: flex;
   align-items: center;
@@ -501,7 +483,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   100% { left: -30%; }
 }
 
-/* Citation tags -- footnote-style, expand on click */
+
 .citations {
   margin-top: 14px;
   display: flex;
@@ -553,9 +535,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   color: var(--text-primary);
 }
 
-/* ==========================================================================
-   Ask bar
-   ========================================================================== */
+
 .ask-bar {
   display: flex;
   gap: 10px;
@@ -570,9 +550,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   line-height: 1.55;
 }
 
-/* ==========================================================================
-   Modals
-   ========================================================================== */
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -622,9 +600,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .confirm-message { font-size: 14px; line-height: 1.55; margin: 4px 0 22px; }
 .confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
 
-/* ==========================================================================
-   Responsive
-   ========================================================================== */
+
 @media (max-width: 720px) {
   .app { grid-template-columns: 1fr; }
   .sidebar { display: none; }

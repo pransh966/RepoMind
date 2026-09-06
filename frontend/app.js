@@ -1,7 +1,3 @@
-// RepoMind frontend -- vanilla JS, no build step, no framework.
-// Talks to the FastAPI backend over plain fetch(). Auth token + selected
-// repo id are kept in localStorage so a refresh doesn't log you out.
-
 const API_BASE = "http://127.0.0.1:8000";
 
 const state = {
@@ -13,9 +9,7 @@ const state = {
     : null,
 };
 
-// ---------------------------------------------------------------------
-// DOM refs
-// ---------------------------------------------------------------------
+
 const authScreen = document.getElementById("auth-screen");
 const appEl = document.getElementById("app");
 const connectModal = document.getElementById("connect-modal");
@@ -39,10 +33,7 @@ const askBtn = document.getElementById("ask-btn");
 
 const userEmailEl = document.getElementById("user-email");
 
-// ---------------------------------------------------------------------
-// API helper -- attaches the bearer token, throws with the server's own
-// error message so callers can show it directly.
-// ---------------------------------------------------------------------
+
 async function api(path, options = {}) {
   const headers = options.headers ? { ...options.headers } : {};
   if (state.token) headers["Authorization"] = `Bearer ${state.token}`;
@@ -52,7 +43,7 @@ async function api(path, options = {}) {
   }
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   let data = null;
-  try { data = await res.json(); } catch (_) { /* no body */ }
+  try { data = await res.json(); } catch (_) {  }
   if (!res.ok) {
     const detail = data && data.detail ? data.detail : `Request failed (${res.status})`;
     throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
@@ -60,9 +51,7 @@ async function api(path, options = {}) {
   return data;
 }
 
-// ---------------------------------------------------------------------
-// Confirm modal -- returns a Promise<boolean>, used for destructive actions
-// ---------------------------------------------------------------------
+
 function confirmAction(message, confirmLabel = "Delete") {
   return new Promise((resolve) => {
     document.getElementById("confirm-message").textContent = message;
@@ -88,9 +77,7 @@ function confirmAction(message, confirmLabel = "Delete") {
   });
 }
 
-// ---------------------------------------------------------------------
-// Auth
-// ---------------------------------------------------------------------
+
 function showAuthTab(tab) {
   document.querySelectorAll("#auth-screen .tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
   loginForm.classList.toggle("hidden", tab !== "login");
@@ -165,9 +152,7 @@ async function showApp() {
   }
 }
 
-// ---------------------------------------------------------------------
-// Repos
-// ---------------------------------------------------------------------
+
 async function loadRepos() {
   state.repos = await api("/repos");
   renderRepoList();
@@ -246,12 +231,10 @@ async function selectRepo(repoId) {
   await loadHistory(repoId);
 }
 
-// ---------------------------------------------------------------------
-// History
-// ---------------------------------------------------------------------
+
 async function loadHistory(repoId) {
   const items = await api(`/history?repo_id=${repoId}`);
-  const ordered = [...items].reverse(); // oldest first for the chat transcript
+  const ordered = [...items].reverse();
   messagesEl.innerHTML = "";
   if (ordered.length === 0) {
     messagesEl.appendChild(makeEmptyState());
@@ -332,9 +315,7 @@ function makeEmptyState() {
   return div;
 }
 
-// ---------------------------------------------------------------------
-// Chat rendering
-// ---------------------------------------------------------------------
+
 function renderMarkdown(text) {
   if (typeof marked === "undefined" || typeof DOMPurify === "undefined") {
     const div = document.createElement("div");
@@ -466,9 +447,7 @@ questionInput.addEventListener("keydown", (e) => {
   }
 });
 
-// ---------------------------------------------------------------------
-// Connect-repo modal (git URL / zip upload)
-// ---------------------------------------------------------------------
+
 const connectRepoBtn = document.getElementById("connect-repo-btn");
 const closeModalBtn = document.getElementById("close-modal-btn");
 const gitForm = document.getElementById("git-form");
@@ -548,16 +527,12 @@ uploadForm.addEventListener("submit", async (e) => {
   }
 });
 
-// ---------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------
+
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
 }
 
-// ---------------------------------------------------------------------
-// Boot
-// ---------------------------------------------------------------------
+
 tryResumeSession();

@@ -305,3 +305,20 @@ def get_history(repo_id: int | None = None, user: dict = Depends(get_current_use
             citations=json.loads(r["citations"]), latency_ms=r["latency_ms"], created_at=r["created_at"],
         ))
     return items
+
+
+@app.delete("/history/{history_id}")
+def delete_history_item(history_id: int, user: dict = Depends(get_current_user)):
+    deleted = db.delete_history_item(history_id, user["id"])
+    if not deleted:
+        raise HTTPException(status_code=404, detail="History item not found.")
+    return {"deleted": True}
+
+
+@app.delete("/history")
+def clear_history(repo_id: int, user: dict = Depends(get_current_user)):
+    repo_row = db.get_repo(repo_id, user["id"])
+    if repo_row is None:
+        raise HTTPException(status_code=404, detail="Repo not found.")
+    count = db.clear_history(user["id"], repo_id)
+    return {"deleted": count}

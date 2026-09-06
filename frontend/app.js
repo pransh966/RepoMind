@@ -19,6 +19,7 @@ const state = {
 const authScreen = document.getElementById("auth-screen");
 const appEl = document.getElementById("app");
 const connectModal = document.getElementById("connect-modal");
+const confirmModal = document.getElementById("confirm-modal");
 
 const loginForm = document.getElementById("login-form");
 const registerForm = document.getElementById("register-form");
@@ -27,8 +28,8 @@ const registerError = document.getElementById("register-error");
 
 const repoListEl = document.getElementById("repo-list");
 const historyListEl = document.getElementById("history-list");
+const clearHistoryBtn = document.getElementById("clear-history-btn");
 const messagesEl = document.getElementById("messages");
-const emptyStateEl = document.getElementById("empty-state");
 const currentRepoNameEl = document.getElementById("current-repo-name");
 const currentRepoMetaEl = document.getElementById("current-repo-meta");
 
@@ -60,14 +61,42 @@ async function api(path, options = {}) {
 }
 
 // ---------------------------------------------------------------------
+// Confirm modal -- returns a Promise<boolean>, used for destructive actions
+// ---------------------------------------------------------------------
+function confirmAction(message, confirmLabel = "Delete") {
+  return new Promise((resolve) => {
+    document.getElementById("confirm-message").textContent = message;
+    const okBtn = document.getElementById("confirm-ok-btn");
+    const cancelBtn = document.getElementById("confirm-cancel-btn");
+    okBtn.textContent = confirmLabel;
+    confirmModal.classList.remove("hidden");
+
+    function cleanup(result) {
+      confirmModal.classList.add("hidden");
+      okBtn.removeEventListener("click", onOk);
+      cancelBtn.removeEventListener("click", onCancel);
+      confirmModal.removeEventListener("click", onOverlay);
+      resolve(result);
+    }
+    function onOk() { cleanup(true); }
+    function onCancel() { cleanup(false); }
+    function onOverlay(e) { if (e.target === confirmModal) cleanup(false); }
+
+    okBtn.addEventListener("click", onOk);
+    cancelBtn.addEventListener("click", onCancel);
+    confirmModal.addEventListener("click", onOverlay);
+  });
+}
+
+// ---------------------------------------------------------------------
 // Auth
 // ---------------------------------------------------------------------
 function showAuthTab(tab) {
-  document.querySelectorAll(".auth-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  document.querySelectorAll("#auth-screen .tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
   loginForm.classList.toggle("hidden", tab !== "login");
   registerForm.classList.toggle("hidden", tab !== "register");
 }
-document.querySelectorAll(".auth-tab").forEach(btn => {
+document.querySelectorAll("#auth-screen .tab-btn").forEach(btn => {
   btn.addEventListener("click", () => showAuthTab(btn.dataset.tab));
 });
 
@@ -148,7 +177,7 @@ function renderRepoList() {
   repoListEl.innerHTML = "";
   if (state.repos.length === 0) {
     const empty = document.createElement("p");
-    empty.className = "sidebar-empty";
+    empty.className = "side-empty";
     empty.textContent = "No repos yet.";
     repoListEl.appendChild(empty);
     return;
@@ -156,10 +185,46 @@ function renderRepoList() {
   for (const repo of state.repos) {
     const item = document.createElement("div");
     item.className = "repo-item" + (repo.id === state.activeRepoId ? " active" : "");
-    item.innerHTML = `
-      <span class="repo-item-name">${escapeHtml(repo.name)}</span>
-      <span class="repo-item-meta">${repo.chunks_count} chunks</span>
-    `;
+
+    const name = document.createElement("span");
+    name.className = "repo-item-name";
+    name.textContent = repo.name;
+
+    const meta = document.createElement("span");
+    meta.className = "repo-item-meta";
+    meta.textContent = repo.chunks_count;
+
+    const del = document.createElement("button");
+    del.className = "repo-item-delete";
+    del.textContent = "\u00d7";
+    del.setAttribute("aria-label", "Delete this repo");
+    del.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const ok = await confirmAction(`Delete "${repo.name}" and all its history? This can't be undone.`, "Delete repo");
+      if (!ok) return;
+      try {
+        await api(`/repos/${repo.id}`, { method: "DELETE" });
+        await loadRepos();
+        if (state.activeRepoId === repo.id) {
+          state.activeRepoId = null;
+          localStorage.removeItem("repomind_active_repo");
+          currentRepoNameEl.textContent = "No repo selected";
+          currentRepoMetaEl.textContent = "";
+          questionInput.disabled = true;
+          askBtn.disabled = true;
+          messagesEl.innerHTML = "";
+          messagesEl.appendChild(makeEmptyState());
+          historyListEl.innerHTML = "";
+          clearHistoryBtn.classList.add("hidden");
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    item.appendChild(name);
+    item.appendChild(meta);
+    item.appendChild(del);
     item.addEventListener("click", () => selectRepo(repo.id));
     repoListEl.appendChild(item);
   }
@@ -172,7 +237,7 @@ async function selectRepo(repoId) {
 
   const repo = state.repos.find(r => r.id === repoId);
   currentRepoNameEl.textContent = repo ? repo.name : "Unknown repo";
-  currentRepoMetaEl.textContent = repo ? `${repo.chunks_count} chunks · ${repo.source}` : "";
+  currentRepoMetaEl.textContent = repo ? `${repo.chunks_count} chunks -- ${repo.source}` : "";
 
   questionInput.disabled = false;
   askBtn.disabled = false;
@@ -182,8 +247,7 @@ async function selectRepo(repoId) {
 }
 
 // ---------------------------------------------------------------------
-// History (shown both as the initial chat transcript for a repo, and as
-// the clickable recent-questions list in the sidebar)
+// History
 // ---------------------------------------------------------------------
 async function loadHistory(repoId) {
   const items = await api(`/history?repo_id=${repoId}`);
@@ -198,53 +262,86 @@ async function loadHistory(repoId) {
     }
     scrollToBottom();
   }
-  renderHistorySidebar(items.slice(0, 20));
+  renderHistorySidebar(items.slice(0, 30));
 }
 
 function renderHistorySidebar(items) {
   historyListEl.innerHTML = "";
+  clearHistoryBtn.classList.toggle("hidden", items.length === 0);
   if (items.length === 0) {
     const empty = document.createElement("p");
-    empty.className = "sidebar-empty";
+    empty.className = "side-empty";
     empty.textContent = "No questions yet.";
     historyListEl.appendChild(empty);
     return;
   }
   for (const item of items) {
-    const el = document.createElement("div");
-    el.className = "history-item";
-    el.textContent = item.question;
-    el.title = item.question;
-    el.addEventListener("click", () => {
+    const row = document.createElement("div");
+    row.className = "history-item";
+
+    const text = document.createElement("span");
+    text.className = "history-item-text";
+    text.textContent = item.question;
+    text.title = item.question;
+    text.addEventListener("click", () => {
       const target = [...messagesEl.querySelectorAll(".message.user")]
         .find(m => m.dataset.historyId === String(item.id));
       if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
     });
-    historyListEl.appendChild(el);
+
+    const del = document.createElement("button");
+    del.className = "history-item-delete";
+    del.textContent = "\u00d7";
+    del.setAttribute("aria-label", "Delete this question");
+    del.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const ok = await confirmAction("Delete this question and its answer?");
+      if (!ok) return;
+      try {
+        await api(`/history/${item.id}`, { method: "DELETE" });
+        await loadHistory(state.activeRepoId);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    row.appendChild(text);
+    row.appendChild(del);
+    historyListEl.appendChild(row);
   }
 }
+
+clearHistoryBtn.addEventListener("click", async () => {
+  if (!state.activeRepoId) return;
+  const ok = await confirmAction("Delete all history for this repo? This can't be undone.", "Clear all");
+  if (!ok) return;
+  try {
+    await api(`/history?repo_id=${state.activeRepoId}`, { method: "DELETE" });
+    await loadHistory(state.activeRepoId);
+  } catch (err) {
+    alert(err.message);
+  }
+});
 
 function makeEmptyState() {
   const div = document.createElement("div");
   div.className = "empty-state";
+  div.id = "empty-state";
   div.innerHTML = `<p class="empty-title">Ask your first question</p>
-    <p class="empty-body">Try something like "How does authentication work here?"</p>`;
+    <p class="empty-body">Try: "How does authentication work here?"</p>`;
   return div;
 }
 
 // ---------------------------------------------------------------------
-// Chat
+// Chat rendering
 // ---------------------------------------------------------------------
 function renderMarkdown(text) {
   if (typeof marked === "undefined" || typeof DOMPurify === "undefined") {
-    // CDN scripts failed to load (e.g. no internet) -- fall back to plain text
-    // instead of showing a blank bubble.
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }
-  const raw = marked.parse(text, { breaks: true });
-  return DOMPurify.sanitize(raw);
+  return DOMPurify.sanitize(marked.parse(text, { breaks: true }));
 }
 
 function appendMessage(role, text, citations, historyId) {
@@ -269,23 +366,54 @@ function appendMessage(role, text, citations, historyId) {
   wrap.appendChild(bubble);
 
   if (citations && citations.length > 0) {
-    const cites = document.createElement("div");
-    cites.className = "citations";
-    for (const c of citations) {
-      const chip = document.createElement("div");
-      chip.className = "citation";
-      chip.innerHTML = `
-        <div class="citation-head">
+    const tagRow = document.createElement("div");
+    tagRow.className = "citations";
+    const detailEls = [];
+
+    citations.forEach((c, i) => {
+      const tag = document.createElement("button");
+      tag.type = "button";
+      tag.className = "citation-tag";
+      tag.textContent = `[${String(i + 1).padStart(2, "0")}] ${c.file}:${c.start_line}-${c.end_line}`;
+
+      const detail = document.createElement("div");
+      detail.className = "citation-detail";
+      detail.innerHTML = `
+        <div class="citation-detail-head">
           <span>${escapeHtml(c.file)}:${c.start_line}-${c.end_line}</span>
-          <span class="citation-score">score ${c.score}</span>
+          <span>score ${c.score}</span>
         </div>
-        <pre class="citation-snippet">${escapeHtml(c.snippet)}</pre>
+        <pre>${escapeHtml(c.snippet)}</pre>
       `;
-      cites.appendChild(chip);
-    }
-    wrap.appendChild(cites);
+
+      tag.addEventListener("click", () => {
+        const isOpen = detail.classList.toggle("open");
+        tag.classList.toggle("expanded", isOpen);
+      });
+
+      tagRow.appendChild(tag);
+      detailEls.push(detail);
+    });
+
+    wrap.appendChild(tagRow);
+    detailEls.forEach(d => wrap.appendChild(d));
   }
 
+  messagesEl.appendChild(wrap);
+  return wrap;
+}
+
+function appendThinking() {
+  document.getElementById("empty-state")?.remove();
+  const wrap = document.createElement("div");
+  wrap.className = "message assistant";
+  wrap.innerHTML = `
+    <div class="message-role">RepoMind</div>
+    <div class="thinking">
+      <span class="thinking-bar"></span>
+      <span>Reading the codebase...</span>
+    </div>
+  `;
   messagesEl.appendChild(wrap);
   return wrap;
 }
@@ -304,7 +432,7 @@ askForm.addEventListener("submit", async (e) => {
   askBtn.disabled = true;
 
   appendMessage("user", question);
-  const thinkingBubble = appendMessage("assistant", "Thinking...");
+  const thinkingEl = appendThinking();
   scrollToBottom();
 
   try {
@@ -312,14 +440,15 @@ askForm.addEventListener("submit", async (e) => {
       method: "POST",
       json: { repo_id: state.activeRepoId, question },
     });
-    thinkingBubble.remove();
+    thinkingEl.remove();
     appendMessage("assistant", data.answer, data.citations);
     scrollToBottom();
-    await loadHistory(state.activeRepoId); // refresh sidebar + attach history ids
+    await loadHistory(state.activeRepoId);
   } catch (err) {
-    const bubbleEl = thinkingBubble.querySelector(".message-bubble");
-    bubbleEl.classList.remove("markdown-body");
-    bubbleEl.textContent = `Error: ${err.message}`;
+    thinkingEl.innerHTML = `
+      <div class="message-role">RepoMind</div>
+      <div class="message-bubble" style="color: var(--danger)">Error: ${escapeHtml(err.message)}</div>
+    `;
   } finally {
     askBtn.disabled = false;
   }
@@ -353,9 +482,9 @@ connectModal.addEventListener("click", (e) => {
   if (e.target === connectModal) connectModal.classList.add("hidden");
 });
 
-document.querySelectorAll(".modal-tab").forEach(btn => {
+document.querySelectorAll("#connect-modal .tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".modal-tab").forEach(b => b.classList.toggle("active", b === btn));
+    document.querySelectorAll("#connect-modal .tab-btn").forEach(b => b.classList.toggle("active", b === btn));
     const tab = btn.dataset.modalTab;
     gitForm.classList.toggle("hidden", tab !== "git");
     uploadForm.classList.toggle("hidden", tab !== "upload");
@@ -367,7 +496,7 @@ gitForm.addEventListener("submit", async (e) => {
   gitError.textContent = "";
   const submitBtn = document.getElementById("git-submit-btn");
   submitBtn.disabled = true;
-  submitBtn.textContent = "Cloning + indexing...";
+  submitBtn.textContent = "Cloning and indexing...";
 
   const git_url = document.getElementById("git-url-input").value.trim();
   const name = document.getElementById("git-name-input").value.trim() || null;
@@ -382,7 +511,7 @@ gitForm.addEventListener("submit", async (e) => {
     gitError.textContent = err.message;
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = "Clone & index";
+    submitBtn.textContent = "Clone and index";
   }
 });
 
@@ -395,7 +524,7 @@ uploadForm.addEventListener("submit", async (e) => {
   if (!file) return;
 
   submitBtn.disabled = true;
-  submitBtn.textContent = "Uploading + indexing...";
+  submitBtn.textContent = "Uploading and indexing...";
 
   const formData = new FormData();
   formData.append("file", file);
@@ -415,7 +544,7 @@ uploadForm.addEventListener("submit", async (e) => {
     uploadError.textContent = err.message;
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = "Upload & index";
+    submitBtn.textContent = "Upload and index";
   }
 });
 

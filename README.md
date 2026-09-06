@@ -11,16 +11,21 @@ This version adds:
 - **Connect a repo two ways**: a public git URL (server-side `git clone
   --depth 1`) or uploading a `.zip`. Each connected repo gets its own FAISS
   index under `data/repos/<repo_id>/`.
-- **Query history**, persisted per user per repo in SQLite (`data/repomind.db`).
+- **Query history**, persisted per user per repo in **PostgreSQL**, with
+  per-question delete and per-repo "clear all" (`DELETE /history/{id}`,
+  `DELETE /history?repo_id=`).
 - **A separate frontend** (`frontend/`) -- plain HTML/CSS/JS, no build step,
   served independently from the API and talking to it over `fetch()`.
 
 ### Extra setup requirements for v2
+- **PostgreSQL must be installed and running.** Create a database once:
+  `psql -U postgres -c "CREATE DATABASE repomind;"`, then set `DATABASE_URL`
+  in `.env` (see `.env.example`).
 - **`git` must be installed and on PATH** on the machine running the backend
   -- it's what powers "connect via git URL". Check with `git --version`;
   install from git-scm.com if missing. Zip upload doesn't need this.
-- New Python deps: `PyJWT` and `python-multipart` (both pure Python, no
-  compiler needed) -- already added to `requirements.txt`.
+- New Python deps: `PyJWT`, `python-multipart`, `psycopg2-binary` -- already
+  added to `requirements.txt`.
 - **Set a real `JWT_SECRET` in `.env`** before using this beyond your own
   laptop -- the shipped default is for local dev only. Any random long
   string works, e.g. generate one with `python -c "import secrets;
@@ -54,6 +59,8 @@ DELETE /repos/{repo_id}                                (needs Bearer token)
 
 POST   /query           { repo_id, question, top_k? } (needs Bearer token)
 GET    /history?repo_id=<optional>                     (needs Bearer token)
+DELETE /history/{history_id}                           (needs Bearer token)
+DELETE /history?repo_id=<required>   -- clears all history for one repo
 ```
 The old single-repo `scripts/ingest_cli.py` still works standalone for quick
 local testing, but it's not wired into the accounts/history system -- use

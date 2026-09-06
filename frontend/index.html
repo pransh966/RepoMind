@@ -1,137 +1,159 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RepoMind — chat with your code</title>
-<link rel="stylesheet" href="style.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RepoMind</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- ============ AUTH SCREEN ============ -->
-<div id="auth-screen" class="auth-screen">
-  <div class="auth-card">
-    <div class="auth-brand">
-      <span class="auth-brand-mark">&gt;_</span>
-      <span class="auth-brand-name">RepoMind</span>
+  <!-- ===================== AUTH SCREEN ===================== -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="brand">
+        <span class="brand-mark">RM</span>
+        <span class="brand-name">RepoMind</span>
+      </div>
+      <p class="auth-tagline">Ask questions about a codebase. Every answer is traced back to the exact file and line it came from.</p>
+
+      <div class="tab-row">
+        <button class="tab-btn active" data-tab="login">Log in</button>
+        <button class="tab-btn" data-tab="register">Create account</button>
+      </div>
+
+      <form id="login-form" class="auth-form">
+        <label>Email
+          <input type="email" id="login-email" required autocomplete="email" placeholder="name@company.com" />
+        </label>
+        <label>Password
+          <input type="password" id="login-password" required autocomplete="current-password" />
+        </label>
+        <button type="submit" class="btn-primary btn-block">Log in</button>
+        <p class="form-error" id="login-error"></p>
+      </form>
+
+      <form id="register-form" class="auth-form hidden">
+        <label>Email
+          <input type="email" id="register-email" required autocomplete="email" placeholder="name@company.com" />
+        </label>
+        <label>Password
+          <input type="password" id="register-password" required minlength="6" autocomplete="new-password" />
+          <span class="field-hint">At least 6 characters</span>
+        </label>
+        <button type="submit" class="btn-primary btn-block">Create account</button>
+        <p class="form-error" id="register-error"></p>
+      </form>
     </div>
-    <p class="auth-tagline">Ask questions about a codebase. Get answers grounded in the actual source.</p>
-
-    <div class="auth-tabs">
-      <button class="auth-tab active" data-tab="login">Log in</button>
-      <button class="auth-tab" data-tab="register">Create account</button>
-    </div>
-
-    <form id="login-form" class="auth-form">
-      <label>Email
-        <input type="email" id="login-email" required autocomplete="email">
-      </label>
-      <label>Password
-        <input type="password" id="login-password" required autocomplete="current-password">
-      </label>
-      <p class="auth-error" id="login-error"></p>
-      <button type="submit" class="btn-primary">Log in</button>
-    </form>
-
-    <form id="register-form" class="auth-form hidden">
-      <label>Email
-        <input type="email" id="register-email" required autocomplete="email">
-      </label>
-      <label>Password <span class="hint">(6+ characters)</span>
-        <input type="password" id="register-password" required minlength="6" autocomplete="new-password">
-      </label>
-      <p class="auth-error" id="register-error"></p>
-      <button type="submit" class="btn-primary">Create account</button>
-    </form>
   </div>
-</div>
 
-<!-- ============ MAIN APP ============ -->
-<div id="app" class="app hidden">
+  <!-- ===================== APP SHELL ===================== -->
+  <div id="app" class="app hidden">
 
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <span class="brand-mark">&gt;_</span>
-      <span class="brand-name">RepoMind</span>
+    <aside class="sidebar">
+      <div class="brand brand-sidebar">
+        <span class="brand-mark">RM</span>
+        <span class="brand-name">RepoMind</span>
+      </div>
+
+      <button id="connect-repo-btn" class="btn-connect">
+        <span class="plus">+</span> Connect a repo
+      </button>
+
+      <div class="side-section">
+        <div class="side-label">Repos</div>
+        <div id="repo-list" class="repo-list"></div>
+      </div>
+
+      <div class="side-section side-section-grow">
+        <div class="side-label-row">
+          <span class="side-label">History</span>
+          <button id="clear-history-btn" class="btn-tiny hidden">Clear</button>
+        </div>
+        <div id="history-list" class="history-list"></div>
+      </div>
+
+      <div class="side-account">
+        <span id="user-email" class="user-email"></span>
+        <button id="logout-btn" class="btn-link">Log out</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="main-header">
+        <div class="header-title">
+          <span id="current-repo-name">No repo selected</span>
+          <span id="current-repo-meta" class="meta"></span>
+        </div>
+      </header>
+
+      <div id="messages" class="messages">
+        <div class="empty-state" id="empty-state">
+          <p class="empty-title">Connect a repo, then ask it something.</p>
+          <p class="empty-body">Try: "How does authentication work here?"</p>
+        </div>
+      </div>
+
+      <form id="ask-form" class="ask-bar">
+        <textarea id="question-input" placeholder="Ask about the selected repo..." rows="1" disabled></textarea>
+        <button type="submit" id="ask-btn" class="btn-primary" disabled>Ask</button>
+      </form>
+    </main>
+  </div>
+
+  <!-- ===================== CONNECT REPO MODAL ===================== -->
+  <div id="connect-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span>Connect a repo</span>
+        <button id="close-modal-btn" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="tab-row">
+        <button class="tab-btn active" data-modal-tab="git">Git URL</button>
+        <button class="tab-btn" data-modal-tab="upload">Upload .zip</button>
+      </div>
+
+      <form id="git-form" class="modal-form">
+        <label>Public git URL
+          <input type="text" id="git-url-input" placeholder="https://github.com/user/repo.git" required />
+        </label>
+        <label>Name <span class="field-hint">(optional)</span>
+          <input type="text" id="git-name-input" placeholder="Defaults to the repo name" />
+        </label>
+        <p class="form-error" id="git-error"></p>
+        <button type="submit" class="btn-primary btn-block" id="git-submit-btn">Clone and index</button>
+      </form>
+
+      <form id="upload-form" class="modal-form hidden">
+        <label>Zip file
+          <input type="file" id="upload-file-input" accept=".zip" required />
+        </label>
+        <label>Name <span class="field-hint">(optional)</span>
+          <input type="text" id="upload-name-input" placeholder="Defaults to the file name" />
+        </label>
+        <p class="form-error" id="upload-error"></p>
+        <button type="submit" class="btn-primary btn-block" id="upload-submit-btn">Upload and index</button>
+      </form>
     </div>
+  </div>
 
-    <button id="connect-repo-btn" class="btn-connect">+ Connect a repo</button>
-
-    <div class="sidebar-section">
-      <p class="sidebar-label">Repos</p>
-      <div id="repo-list" class="repo-list"></div>
-    </div>
-
-    <div class="sidebar-section sidebar-history">
-      <p class="sidebar-label">Recent questions</p>
-      <div id="history-list" class="history-list"></div>
-    </div>
-
-    <div class="sidebar-footer">
-      <span id="user-email" class="user-email"></span>
-      <button id="logout-btn" class="btn-link">Log out</button>
-    </div>
-  </aside>
-
-  <main class="main">
-    <header class="main-header">
-      <span id="current-repo-name" class="current-repo-name">No repo selected</span>
-      <span id="current-repo-meta" class="current-repo-meta"></span>
-    </header>
-
-    <div id="messages" class="messages">
-      <div class="empty-state" id="empty-state">
-        <p class="empty-title">Connect a repo to get started</p>
-        <p class="empty-body">Point RepoMind at a git URL or upload a zip, then ask anything about how the code works. Every answer cites the file and line range it came from.</p>
+  <!-- ===================== CONFIRM MODAL (delete repo / history) ===================== -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal modal-narrow">
+      <p id="confirm-message" class="confirm-message"></p>
+      <div class="confirm-actions">
+        <button id="confirm-cancel-btn" class="btn-secondary">Cancel</button>
+        <button id="confirm-ok-btn" class="btn-danger">Delete</button>
       </div>
     </div>
-
-    <form id="ask-form" class="ask-bar">
-      <textarea id="question-input" placeholder="Ask about the code…" rows="1" disabled></textarea>
-      <button type="submit" id="ask-btn" disabled>Ask</button>
-    </form>
-  </main>
-</div>
-
-<!-- ============ CONNECT REPO MODAL ============ -->
-<div id="connect-modal" class="modal-overlay hidden">
-  <div class="modal">
-    <div class="modal-header">
-      <span>Connect a repo</span>
-      <button id="close-modal-btn" class="btn-icon">✕</button>
-    </div>
-
-    <div class="modal-tabs">
-      <button class="modal-tab active" data-modal-tab="git">Git URL</button>
-      <button class="modal-tab" data-modal-tab="upload">Upload zip</button>
-    </div>
-
-    <form id="git-form" class="modal-form">
-      <label>Repository URL
-        <input type="text" id="git-url-input" placeholder="https://github.com/user/repo.git" required>
-      </label>
-      <label>Name <span class="hint">(optional)</span>
-        <input type="text" id="git-name-input" placeholder="Defaults to the repo name">
-      </label>
-      <p class="modal-error" id="git-error"></p>
-      <button type="submit" class="btn-primary" id="git-submit-btn">Clone & index</button>
-    </form>
-
-    <form id="upload-form" class="modal-form hidden">
-      <label>Zip file
-        <input type="file" id="upload-file-input" accept=".zip" required>
-      </label>
-      <label>Name <span class="hint">(optional)</span>
-        <input type="text" id="upload-name-input" placeholder="Defaults to the file name">
-      </label>
-      <p class="modal-error" id="upload-error"></p>
-      <button type="submit" class="btn-primary" id="upload-submit-btn">Upload & index</button>
-    </form>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-<script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

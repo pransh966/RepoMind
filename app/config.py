@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-me-in-.env"
     jwt_expire_minutes: int = 60 * 24 * 7  # 7 days
 
+    # --- Database ---
+    # Local Postgres. Format: postgresql://<user>:<password>@<host>:<port>/<database>
+    database_url: str = "postgresql://postgres:postgres@localhost:5432/repomind"
+
     # --- Git ingestion ---
     git_clone_timeout_seconds: int = 120
 

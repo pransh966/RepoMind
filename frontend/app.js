@@ -1,4 +1,4 @@
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://repomind-uvs0.onrender.com";
 
 const state = {
   token: localStorage.getItem("repomind_token") || null,

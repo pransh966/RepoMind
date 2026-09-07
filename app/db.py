@@ -1,13 +1,3 @@
-"""
-PostgreSQL persistence for users, repos, and query history.
-
-Plain psycopg2, no ORM -- same reasoning as before: 3 tables, no complex
-joins, an ORM would be more machinery than value here. Every function
-returns plain dicts (not psycopg2's RealDictRow) with datetime columns
-already converted to ISO-8601 strings, so callers (app/main.py) and the
-Pydantic response models don't need to know or care what database is
-underneath.
-"""
 from __future__ import annotations
 
 import datetime
@@ -65,8 +55,6 @@ def init_db() -> None:
 
 
 def _row_to_dict(row) -> dict[str, Any] | None:
-    """Converts a RealDictRow to a plain dict and stringifies any datetime
-    columns to ISO-8601, so callers get the same shape regardless of DB."""
     if row is None:
         return None
     out = dict(row)
@@ -75,8 +63,6 @@ def _row_to_dict(row) -> dict[str, Any] | None:
             out[key] = value.isoformat()
     return out
 
-
-# --- users -------------------------------------------------------------
 
 def create_user(email: str, password_hash: str, salt: str) -> int:
     conn = get_conn()
@@ -111,8 +97,6 @@ def get_user_by_id(user_id: int) -> dict | None:
     conn.close()
     return _row_to_dict(row)
 
-
-# --- repos ---------------------------------------------------------------
 
 def create_repo(user_id: int, name: str, source: str, source_ref: str | None) -> int:
     conn = get_conn()
@@ -167,8 +151,6 @@ def delete_repo(repo_id: int) -> None:
     conn.close()
 
 
-# --- history ---------------------------------------------------------------
-
 def add_history(user_id: int, repo_id: int, question: str, answer: str, citations_json: str, latency_ms: float) -> int:
     conn = get_conn()
     cur = conn.cursor()
@@ -214,7 +196,6 @@ def get_history_item(history_id: int, user_id: int) -> dict | None:
 
 
 def delete_history_item(history_id: int, user_id: int) -> bool:
-    """Deletes one history entry. Returns True if a row was actually deleted."""
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("DELETE FROM history WHERE id = %s AND user_id = %s", (history_id, user_id))
@@ -226,7 +207,6 @@ def delete_history_item(history_id: int, user_id: int) -> bool:
 
 
 def clear_history(user_id: int, repo_id: int) -> int:
-    """Deletes all history for one repo. Returns how many rows were deleted."""
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("DELETE FROM history WHERE user_id = %s AND repo_id = %s", (user_id, repo_id))

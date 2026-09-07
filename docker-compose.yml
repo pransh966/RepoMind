@@ -6,5 +6,5 @@ services:
     env_file:
       - .env
     volumes:
-      - ./data:/code/data          # persist the FAISS index across restarts
-      - ${REPO_TO_INDEX:-./}:/repo # mount a repo you want to index at /repo inside the container
+      - ./data:/code/data
+      - ${REPO_TO_INDEX:-./}:/repo

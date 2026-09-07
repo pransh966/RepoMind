@@ -1,10 +1,3 @@
-"""
-Ingest a repo directly from the command line, without needing the API server
-running. Useful for a one-off index build or for scripting into a CI step.
-
-Usage:
-    python scripts/ingest_cli.py --repo /path/to/your/repo
-"""
 import argparse
 import sys
 from pathlib import Path

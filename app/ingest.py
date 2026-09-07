@@ -1,4 +1,3 @@
-"""Orchestrates: walk repo -> chunk files -> embed chunks -> build + persist vector store."""
 from __future__ import annotations
 
 import shutil
@@ -14,9 +13,6 @@ from app.vector_store import VectorStore
 
 
 def clone_git_repo(git_url: str) -> Path:
-    """Shallow-clones a git URL into a fresh temp dir and returns its path.
-    Caller is responsible for deleting the returned dir once ingestion is done
-    (we only want to keep the embedded index, not a copy of the raw repo)."""
     tmp_dir = Path(tempfile.mkdtemp(prefix="repomind_git_"))
     try:
         subprocess.run(
@@ -37,10 +33,6 @@ def clone_git_repo(git_url: str) -> Path:
 
 
 def extract_zip_upload(file_bytes: bytes) -> tuple[Path, Path]:
-    """Extracts an uploaded zip into a fresh temp dir. Returns (repo_root, tmp_dir_to_clean_up).
-    If the zip contains one single top-level folder (the common case when
-    zipping a repo from GitHub's 'Download ZIP'), repo_root points inside it
-    so files aren't nested one level too deep."""
     tmp_dir = Path(tempfile.mkdtemp(prefix="repomind_upload_"))
     zip_path = tmp_dir / "upload.zip"
     zip_path.write_bytes(file_bytes)

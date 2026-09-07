@@ -1,12 +1,3 @@
-"""
-End-to-end tests against the FastAPI app.
-
-The real embedding model (sentence-transformers) is intentionally swapped for
-a tiny deterministic fake here -- these tests are checking API wiring and
-control flow (ingest -> store -> retrieve -> answer), not embedding quality,
-and a fake keeps the suite fast and runnable with no model download / no
-network access, which matters a lot in CI.
-"""
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -15,9 +6,6 @@ FAKE_DIM = 8
 
 
 def _fake_embed_texts(texts: list[str]) -> np.ndarray:
-    """Deterministic, dependency-free stand-in for the real embedding model:
-    hashes each text into a fixed-size vector so identical/similar texts land
-    near each other, which is enough to exercise retrieval logic in tests."""
     vectors = np.zeros((len(texts), FAKE_DIM), dtype="float32")
     for i, text in enumerate(texts):
         for j, ch in enumerate(text[:64]):

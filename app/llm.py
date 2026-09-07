@@ -1,11 +1,3 @@
-"""
-Pluggable LLM layer. The important design decision isn't which provider you
-call -- it's the prompt contract: the model is instructed to answer ONLY from
-the provided chunks and explicitly say when the context doesn't contain the
-answer, instead of falling back on its training-data guess. That's what
-"grounded" actually means, and it's the difference between a RAG demo and a
-RAG system you'd trust output from.
-"""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -37,8 +29,6 @@ class LLMClient(ABC):
 
 
 class MockLLMClient(LLMClient):
-    """Deterministic, no-API-key client. Used for local dev, tests, and demoing
-    the retrieval quality on its own before wiring up a paid provider."""
 
     def generate(self, question: str, chunks: list[Chunk]) -> str:
         if not chunks:
@@ -70,8 +60,6 @@ class OpenAIClient(LLMClient):
         return response.choices[0].message.content or ""
 
 class GroqClient(LLMClient):
-    """Groq is OpenAI-API-compatible, so this reuses the `openai` SDK --
-    just pointed at Groq's endpoint instead of OpenAI's."""
 
     def __init__(self, api_key: str, model: str):
         from openai import OpenAI

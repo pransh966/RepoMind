@@ -1,4 +1,3 @@
-"""Request/response schemas shared across the API."""
 from pydantic import BaseModel, Field
 
 
@@ -38,8 +37,6 @@ class QueryResponse(BaseModel):
     chunks_considered: int
 
 
-# --- Auth --------------------------------------------------------------
-
 EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
 
 
@@ -63,8 +60,6 @@ class TokenResponse(BaseModel):
     user: UserOut
 
 
-# --- Repos --------------------------------------------------------------
-
 class GitIngestRequest(BaseModel):
     git_url: str = Field(..., min_length=1)
     name: str | None = None
@@ -78,8 +73,6 @@ class RepoOut(BaseModel):
     chunks_count: int
     created_at: str
 
-
-# --- History --------------------------------------------------------------
 
 class HistoryItem(BaseModel):
     id: int

@@ -1,14 +1,3 @@
-"""
-Password hashing + JWT tokens.
-
-Deliberately dependency-light: password hashing uses stdlib hashlib.pbkdf2_hmac
-(no bcrypt/passlib, which need C extensions that have been a pain to install
-on this project already). JWT uses PyJWT, which is pure Python.
-
-This is enough security for a local/dev/demo tool. Before running this
-anywhere multi-tenant on the public internet, put it behind HTTPS and set a
-real random JWT_SECRET in .env.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -24,7 +13,6 @@ PBKDF2_ITERATIONS = 200_000
 
 
 def hash_password(password: str) -> tuple[str, str]:
-    """Returns (password_hash_hex, salt_hex)."""
     salt = os.urandom(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ITERATIONS)
     return digest.hex(), salt.hex()
@@ -46,5 +34,4 @@ def create_token(user_id: int, email: str) -> str:
 
 
 def decode_token(token: str) -> dict:
-    """Raises jwt.PyJWTError on invalid/expired tokens -- let the caller catch it."""
     return jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])

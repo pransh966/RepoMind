@@ -23,7 +23,7 @@ def test_add_and_search_returns_closest_vector():
 
     assert len(results) == 1
     top_chunk, score = results[0]
-    assert top_chunk.file == "file0.py"  # closest to [1,0,0,0]
+    assert top_chunk.file == "file0.py"
     assert score > 0.8
 
 

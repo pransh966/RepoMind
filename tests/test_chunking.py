@@ -26,30 +26,29 @@ def test_chunk_python_file_splits_by_top_level_def_and_class():
     kinds = sorted(c.kind for c in chunks)
     assert "function" in kinds
     assert "class" in kinds
-    assert "module" in kinds  # the import + CONST line
+    assert "module" in kinds
 
     func_chunk = next(c for c in chunks if c.kind == "function")
     assert "def add(a, b):" in func_chunk.text
 
     class_chunk = next(c for c in chunks if c.kind == "class")
     assert "class Greeter:" in class_chunk.text
-    assert "def greet(self):" in class_chunk.text  # method stays inside its class chunk
+    assert "def greet(self):" in class_chunk.text
 
 
 def test_chunk_python_file_handles_syntax_errors_gracefully():
     broken = "def broken(:\n    this is not valid python"
     chunks = chunk_python_file(Path("broken.py"), broken)
-    # should fall back to text chunking instead of raising
     assert len(chunks) >= 1
     assert chunks[0].kind == "text"
 
 
 def test_chunk_text_respects_max_lines_and_overlap():
-    text = "\n".join(f"line {i}" for i in range(1, 101))  # 100 lines
+    text = "\n".join(f"line {i}" for i in range(1, 101))
     chunks = chunk_text(Path("notes.md"), text, max_lines=40, overlap=10)
     assert chunks[0].start_line == 1
     assert chunks[0].end_line == 40
-    assert chunks[1].start_line == 31  # step = max_lines - overlap = 30
+    assert chunks[1].start_line == 31
     assert chunks[-1].end_line == 100
 
 

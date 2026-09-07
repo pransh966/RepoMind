@@ -1,30 +1,3 @@
-"""
-RepoMind API -- a codebase-aware RAG assistant, multi-user edition.
-
-    Repo (git clone or zip upload) --> AST-aware chunking --> local embeddings --> FAISS index (per repo, on disk)
-                                                                                         |
-    User question --> embed --> retrieve top-k --> LLM (grounded) --> answer + citations --> saved to history
-
-Run locally:
-    uvicorn app.main:app --reload
-
-Auth:
-    POST /auth/register   { "email", "password" }  -> { token, user }
-    POST /auth/login      { "email", "password" }  -> { token, user }
-    GET  /auth/me                                   -> current user (needs Bearer token)
-
-Repos (all require a Bearer token):
-    POST   /repos/git      { "git_url", "name"? }   -> clones + indexes a public git repo
-    POST   /repos/upload   multipart file=<zip>     -> indexes an uploaded .zip
-    GET    /repos                                    -> list your repos
-    DELETE /repos/{repo_id}                          -> remove a repo + its index
-
-Query + history (all require a Bearer token):
-    POST /query    { "repo_id", "question" }        -> retrieval-augmented answer with citations
-    GET  /history?repo_id=<optional>                -> your past questions/answers
-
-GET /health -> liveness check (public)
-"""
 from __future__ import annotations
 
 import json
@@ -53,9 +26,6 @@ from app.vector_store import VectorStore
 
 REPOS_DIR = Path(settings.data_dir) / "repos"
 
-# Per-repo VectorStores are loaded from disk lazily and cached in memory here.
-# Keyed by repo_id. A single-process demo tool doesn't need a shared cache --
-# swapping this for a real vector DB is the natural change for multi-worker deployments.
 _store_cache: dict[int, VectorStore] = {}
 
 
@@ -70,15 +40,12 @@ app = FastAPI(title="RepoMind", description="Codebase-aware RAG assistant", vers
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # frontend now runs on a different origin/port -- tighten this before deploying publicly
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# ---------------------------------------------------------------------------
-# Rate limiter (unchanged from v1) -- sliding window per client IP.
-# ---------------------------------------------------------------------------
 _request_log: dict[str, deque] = defaultdict(deque)
 
 
@@ -99,9 +66,6 @@ async def rate_limit_middleware(request: Request, call_next):
     return await call_next(request)
 
 
-# ---------------------------------------------------------------------------
-# Auth dependency
-# ---------------------------------------------------------------------------
 _bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -143,9 +107,6 @@ def health():
     return {"status": "ok"}
 
 
-# ---------------------------------------------------------------------------
-# Auth endpoints
-# ---------------------------------------------------------------------------
 @app.post("/auth/register", response_model=TokenResponse, status_code=201)
 def register(req: RegisterRequest):
     if db.get_user_by_email(req.email) is not None:
@@ -170,9 +131,6 @@ def me(user: dict = Depends(get_current_user)):
     return UserOut(id=user["id"], email=user["email"])
 
 
-# ---------------------------------------------------------------------------
-# Repo management -- ingest via git clone or zip upload
-# ---------------------------------------------------------------------------
 @app.post("/repos/git", response_model=RepoOut)
 def create_repo_from_git(req: GitIngestRequest, user: dict = Depends(get_current_user)):
     name = req.name or req.git_url.rstrip("/").rsplit("/", 1)[-1].removesuffix(".git")
@@ -251,9 +209,6 @@ def delete_repo(repo_id: int, user: dict = Depends(get_current_user)):
     return {"deleted": True}
 
 
-# ---------------------------------------------------------------------------
-# Query + history
-# ---------------------------------------------------------------------------
 @app.post("/query", response_model=QueryResponse)
 def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     repo_row = db.get_repo(req.repo_id, user["id"])

@@ -1,13 +1,3 @@
-"""
-Thin wrapper around a FAISS flat index + a parallel JSON metadata list.
-
-A flat (brute-force) index is the right choice here: for a single-repo /
-single-user tool, the corpus is small enough (thousands, not millions, of
-chunks) that exact search is fast and avoids the recall tradeoffs of an
-approximate index (HNSW/IVF). If this needed to scale to many large repos or
-many concurrent users, swapping in faiss.IndexHNSWFlat behind this same
-interface is the natural next step -- worth saying out loud in an interview.
-"""
 from __future__ import annotations
 
 import json
@@ -23,7 +13,7 @@ from app.chunking import Chunk
 class VectorStore:
     def __init__(self, dim: int):
         self.dim = dim
-        self.index = faiss.IndexFlatIP(dim)  # inner product on normalized vectors == cosine similarity
+        self.index = faiss.IndexFlatIP(dim)
         self.metadata: list[Chunk] = []
 
     def add(self, vectors: np.ndarray, chunks: list[Chunk]) -> None:
